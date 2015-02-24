@@ -1,0 +1,59 @@
+<!-- views/pages/story.ejs -->
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <% include ../partials/head %>
+</head>
+<body class="container">
+
+    <header>
+        <% include ../partials/header %>
+    </header>
+
+    <main>
+        <div class="row">
+            <div class="col-sm-8">
+            
+                <div class="jumbotron">
+					<h2 class="card-heading simple">安價</h2>
+					<form action="/story" method="post">
+						<input id="title" type="text" placeholder="Title" name="title" required>
+						<input id="author" type="text" placeholder="Author" name="author" required>
+						<input id="password" type="password" placeholder="Password" name="password" required>
+						<button style="margin-top:-10px" id="articleSend" type="submit" class="btn">Send</button>
+					</form>
+                </div>
+                
+            </div>
+            <div class="col-sm-4">
+                
+                <div class="well">
+					<h2>Loop</h2>
+					<ul>
+						<% articles.forEach(function(article) { %>
+							<li>
+								<h3><%= article.title %>
+									<span class="text-success">
+										<%= article.author %>
+									</span>
+								</h3>
+								<small class="muted">
+									<% var d = new Date(article._id.getTimestamp()) %>
+									<%= d.getFullYear() + "/" + d.getMonth() + "/" + d.getDate() + " " + d.toLocaleTimeString() %>
+								</small>
+							</li>
+						<% }); %>
+					</ul>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <% include ../partials/footer %>
+    </footer>
+    
+</body>
+</html>
