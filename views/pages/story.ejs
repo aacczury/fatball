@@ -16,34 +16,60 @@
             <div class="col-sm-8">
             
                 <div class="jumbotron">
-					<h2 class="card-heading simple">安價</h2>
-					<form action="/story" method="post">
-						<input id="title" type="text" placeholder="Title" name="title" required>
-						<input id="author" type="text" placeholder="Author" name="author" required>
-						<input id="password" type="password" placeholder="Password" name="password" required>
-						<button style="margin-top:-10px" id="articleSend" type="submit" class="btn">Send</button>
+					<h2>安價</h2>
+					<form method='post' action='/story/<%= storyId %>' enctype='multipart/form-data'>
+						<input type='file' name='image'/><br/>
+						<textarea name="text" style="width:95%;" rows="3"></textarea><br/>
+						<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
 					</form>
+                </div>
+				
+                <div class="jumbotron">
+					<h2>安價</h2>
+					<form method='post' action='/comment/<%= storyId %>/'>
+						<input id="author" type="text" placeholder="Nickname" name="author" required>
+						<input id="text" type="text" placeholder="Content" name="text" required>
+						<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
+					</form>
+                </div>
+				
+                <div class="well">
+					<h2>Comments</h2>
+					<ul>
+						<% for(var i = 0; i < comments.length; ++ i ){ %>
+							<div class="row">
+								<div class="col-md-2">
+									<%= comments[i].author %>
+								</div>
+								<div class="col-md-4">
+									<%= comments[i].text %>
+								</div>
+								<div class="col-md-3 col-md-offset-3">
+									<% var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ]; %>
+									<% var d = new Date(comments[i]._id.getTimestamp()) %>
+									<%= monthNames[d.getMonth()] + " " + d.getDate() + " " + d.toLocaleTimeString() %>
+								</div>
+							</div>
+						<% } %>
+					</ul>
                 </div>
                 
             </div>
             <div class="col-sm-4">
                 
                 <div class="well">
-					<h2>Loop</h2>
+					<h2>Contents</h2>
 					<ul>
-						<% articles.forEach(function(article) { %>
-							<li>
-								<h3><%= article.title %>
-									<span class="text-success">
-										<%= article.author %>
-									</span>
-								</h3>
-								<small class="muted">
-									<% var d = new Date(article._id.getTimestamp()) %>
-									<%= d.getFullYear() + "/" + d.getMonth() + "/" + d.getDate() + " " + d.toLocaleTimeString() %>
-								</small>
-							</li>
-						<% }); %>
+						<% for(var i = 0; i < contents.length; ++ i ){ %>
+							<a href="/story/<%= storyId %>#<%= i %>">
+								<li>
+									<img title="<%= contents[i].title %>" src="/uploads/thumbs/<%= storyId %>/<%= contents[i].image %>" />
+									<small class="muted">
+										<%= contents[i].text %>
+									</small>
+								</li>
+							</a>
+						<% } %>
 					</ul>
                 </div>
 
@@ -51,9 +77,11 @@
         </div>
     </main>
 
+	<div id="content"></div>
+	<script src="js/main.js"></script>
+
     <footer>
         <% include ../partials/footer %>
     </footer>
-    
 </body>
 </html>

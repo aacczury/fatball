@@ -9,13 +9,14 @@ db.bind('comments');
 
 var crypto = require('crypto');
 var fs = require('fs');
+var lwip = require('lwip');
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
 	db.story.find().sort({'_id':-1}).toArray(function(err, articles){
 		console.log("articles: " + JSON.stringify(articles[0]));
 		
-		res.render('pages/story', {
+		res.render('pages/stories', {
 			articles: articles
 		});
 	});
@@ -33,8 +34,10 @@ router.post('/', function(req, res, next) {
 	
 	db.story.insert(story, function(err, result){
 		console.log(result);
-		/*var dbArticle = result[0];
-		dbArticle.time = dbArticle._id.getTimestamp();
+		var dbStory = result[0];
+		fs.mkdir(__dirname + "/public/uploads/fullsize/" + dbStory._id, function(err){});
+		fs.mkdir(__dirname + "/public/uploads/thumbs/" + dbStory._id, function(err){});
+		/*dbArticle.time = dbArticle._id.getTimestamp();
 		io.sockets.emit('getArticle', art);*/
 		res.redirect('/story');
 	});
@@ -42,49 +45,57 @@ router.post('/', function(req, res, next) {
 
 router.get('/:id', function(req, res) {
 	var id = req.params.id;
-	var auth = req.session.valid ? req.session.valid[id] : null;
-	var plus = req.session.plus ? req.session.plus : {};
-	db.contents.find({'article_id': id}).toArray(function(err, content){
+	db.contents.find({'article_id': id}).toArray(function(err, contents){
 		db.comments.find({'article_id': id}).sort({'_id':1}).toArray(function(err, comments) {
-			res.render('story', { reqid: id, contents: contents, comments: comments, auth: auth, plus: plus});
+			res.render('pages/story', { storyId: id, contents: contents, comments: comments});
 		});
 	});
 });
 
 router.post('/:id', function(req, res){
+	console.log(req.files);
 	fs.readFile(req.files.image.path, function (err, data) {
-		var imageName = req.files.image.name;
 		console.log(req.body.text);
+		var imageTitle = req.files.image.originalname;
 		
-		if(!imageName){
+		if(!imageTitle){
 			console.log("There was an error")
-			res.redirect("/articles/" + req.params.id);
+			res.redirect("/story/" + req.params.id);
 			res.end();
 		} else {
 			var sha1 = crypto.createHash('sha1');
 			sha1.update(String((new Date()).getTime()));
-			sha1.update(imageName);
-			imageName = sha1.digest('hex') + "_" + imageName;
-			var newPath = __dirname + "/public/uploads/fullsize/" + imageName;
-			var thumbPath = __dirname + "/public/uploads/thumbs/" + imageName;
-			fs.writeFile(newPath, data, function (err) {
-				im.resize({
-					srcPath: newPath,
-					dstPath: thumbPath,
-					width: 200
-				}, function(err, stdout, stderr){
-					if (err) throw err;
-					console.log('resized image to fit within 200x200px');
-				});
-				var imageText = {};
-				imageText.name = imageName;
-				imageText.text = req.body.text;
-				imageText.article_id = req.params.id;
-				db.collection('images').insert(imageText, function(err, result){
-					console.log(result);
-					if(err) throw err;
-					io.sockets.emit('getImage' + req.params.id, imageText);
-					res.redirect("/articles/" + req.params.id);
+			sha1.update(imageTitle);
+			imageName = sha1.digest('hex')  + "." + req.files.image.extension;
+			var imgPath = "./public/uploads/fullsize/" + req.params.id + "/" + imageName;
+			var thumbPath = "./public/uploads/thumbs/" + req.params.id + "/" + imageName;
+			
+			lwip.open(data, req.files.image.extension, function(err, image){
+				console.log(err);
+				
+				image.batch()
+				.resize(200)
+				.writeFile(thumbPath, function(err){
+					console.log(err);
+					
+					fs.writeFile(imgPath, data, function (err) {
+						console.log(err);
+						
+						var content = {
+							title : imageTitle,
+							image : imageName,
+							text : req.body.text,
+							article_id : req.params.id
+						};
+						
+						// add to db
+						db.contents.insert(content, function(err, result){
+							console.log(result);
+							if(err) throw err;
+							//io.sockets.emit('getImage' + req.params.id, content);
+							res.redirect("/story/" + req.params.id);
+						});
+					});
 				});
 			});
 		}
