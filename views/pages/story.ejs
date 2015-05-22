@@ -18,18 +18,18 @@
 
                 <div class="jumbotron">
 					<h2>安價</h2>
-					<form method='post' action='/story/<%= storyId %>' enctype='multipart/form-data'>
-						<input type='file' name='image'/><br/>
-						<textarea name="text" style="width:95%;" rows="3"></textarea><br/>
-						<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
+					<form id="image_form">
+						<input id="image_file" type='file' name='image'/><br/>
+						<textarea id="image_text" name="text" style="width:95%;" rows="3"></textarea><br/>
+						<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
 					</form>
                 </div>
 
                 <div class="jumbotron">
 					<h2>安價</h2>
-					<form id="comments_form">
-						<input id="author" type="text" placeholder="Nickname" name="author" />
-						<input id="text" type="text" placeholder="Content" name="text" />
+					<form id="comment_form">
+						<input id="comment_author" type="text" placeholder="Nickname" name="author" />
+						<input id="comment_text" type="text" placeholder="Content" name="text" />
 						<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
 					</form>
                 </div>
@@ -79,25 +79,49 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="/javascripts/socket.io-stream.js"></script>
     <script>
         var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
         var socket = io('http://140.116.247.90:4104/story');
 
-        $('#comments_form').submit(function(){
-            $('#author').css('box-shadow', '');
-            $('#text').css('box-shadow', '');
-            if($('#author').val() == "") $('#author').focus().css('box-shadow', '0px 0px 3px red');
-            else if($('#text').val() == "") $('#text').focus().css('box-shadow', '0px 0px 3px red');
+        $('#comment_form').submit(function(){
+            $('#comment_author').css('box-shadow', '');
+            $('#comment_text').css('box-shadow', '');
+            if($('#comment_author').val() == "") $('#comment_author').focus().css('box-shadow', '0px 0px 3px red');
+            else if($('#comment_text').val() == "") $('#comment_text').focus().css('box-shadow', '0px 0px 3px red');
             else{
                 var comment = {
-                    author: $('#author').val(),
-                    text: $('#text').val()
+                    author: $('#comment_author').val(),
+                    text: $('#comment_text').val()
                 }
                 socket.emit('story comment', comment);
-                $('#text').val("");
+                $('#comment_text').val("");
             }
             return false;
         });
+
+        var file = null;
+        $('#image_file').change(function(e){
+            file = e.target.files[0];
+            console.log(file);
+        });
+        $('#image_form').submit(function(){
+            $('#image_file').css('box-shadow', '');
+            $('#image_text').css('box-shadow', '');
+            if(!file) $('#image_file').focus().css('box-shadow', '0px 0px 3px red');
+            else if($('#image_text').val() == "") $('#image_text').focus().css('box-shadow', '0px 0px 3px red');
+            else{
+                var stream = ss.createStream();
+                ss(socket).emit('story image', stream, {title: file.name, text: $('#image_text').val()});
+                ss.createBlobReadStream(file).pipe(stream);
+
+                $('#image_file').val("");
+                $('#image_text').val("");
+            }
+            return false;
+        });
+
+
 
         socket.on('story comment', function(comment){
             console.log(comment);

@@ -10,6 +10,7 @@ db.bind('comments');
 var crypto = require('crypto');
 var fs = require('fs');
 var lwip = require('lwip');
+var ss = require('socket.io-stream');
 
 function init(io){
 	var storyID = "";
@@ -119,6 +120,44 @@ function init(io){
 				socket.emit('story comment', result[0]);
 				socket.to('story' + storyID).emit('story comment', result[0]);
 			});
+		});
+
+		ss(socket).on('story image', function(stream, img_data){
+			var title = img_data.title.split('.')[0];
+			var ext = img_data.title.split('.')[1];
+			var text = img_data.text;
+
+			var sha1 = crypto.createHash('sha1');
+			sha1.update(String((new Date()).getTime()));
+			sha1.update(title);
+			imageName = sha1.digest('hex')  + "." + ext;
+			var imgPath = "./public/uploads/fullsize/" + storyID + "/" + imageName;
+			var thumbPath = "./public/uploads/thumbs/" + storyID + "/" + imageName;
+
+			stream.pipe(fs.createWriteStream(imgPath), {end: false});
+			stream.on('end', function(){
+				lwip.open(imgPath, function(err, image){
+					console.log(err);
+
+					image.batch().resize(200).writeFile(thumbPath, function(err){
+						console.log(err);
+
+						var content = {
+							title : title,
+							image : imageName,
+							text : text,
+							article_id : storyID
+						};
+						// add to db
+						db.contents.insert(content, function(err, result){
+							console.log(result);
+							if(err) throw err;
+							//io.sockets.emit('getImage' + req.params.id, content);
+						});
+					});
+				});
+			});
+
 		});
 
 		socket.on('disconnect', function(){
