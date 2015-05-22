@@ -18,11 +18,20 @@
 
                 <div class="jumbotron">
 					<h2>安價</h2>
-					<form id="image_form">
-						<input id="image_file" type='file' name='image'/><br/>
-						<textarea id="image_text" name="text" style="width:95%;" rows="3"></textarea><br/>
-						<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
-					</form>
+                    <% if(auth){ %>
+    					<form id="image_form">
+    						<input id="image_file" type='file' name='image'/><br/>
+    						<textarea id="image_text" name="text" style="width:95%;" rows="3"></textarea><br/>
+    						<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
+    					</form>
+                    <% }else{ %>
+                        <form method='post' action='/story/<%= storyId %>/login/' >
+                            <input id="password" name="password" type="text" placeholder="Password" />
+    						<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
+                        </form>
+                    <% } %>
+                    <% if(error){ %><div class="alert alert-danger" role="alert"><%= error %></div><% } %>
+                    <% if(success){ %><div class="alert alert-success" role="alert"><%= success %></div><% } %>
                 </div>
 
                 <div class="jumbotron">
@@ -84,6 +93,7 @@
         var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
         var socket = io('http://140.116.247.90:4104/story');
 
+        <% if(auth){ %>
         var file = null;
         $('#image_file').change(function(e){
             file = e.target.files[0];
@@ -104,6 +114,16 @@
             }
             return false;
         });
+        var image_length = <%= contents.length %>;
+        socket.on('story image', function(img){
+            //console.log(img);
+            var image = $("<img />").attr("title", img.title).attr("src", "/uploads/thumbs/" + img.article_id + "/" + img.image);
+            var text = $("<small></small>").addClass("muted").text(img.text);
+            var li = $("<li></li>").append(image).append(text);
+            var a = $("<a></a>").attr("href", "/story/" + img.article_id + "#" + ( image_length ++ )).append(li);
+            $("#images_content").append(a);
+        });
+        <% } %>
 
         $('#comment_form').submit(function(){
             $('#comment_author').css('box-shadow', '');
@@ -119,16 +139,6 @@
                 $('#comment_text').val("");
             }
             return false;
-        });
-
-
-
-        socket.on('story image', function(img){
-            //console.log(img);
-            var image = $("<img />").attr("title", img.title).attr("src", "/uploads/thumbs/" + img.article_id + "/" + img.image);
-            var text = $("<small></small>").addClass("muted").text(img.text);
-            var li = $("<li></li>").append(image).append(text);
-            $("#images_content").append(li);
         });
 
         socket.on('story comment', function(comment){

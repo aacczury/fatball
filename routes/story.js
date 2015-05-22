@@ -13,14 +13,12 @@ var lwip = require('lwip');
 var ss = require('socket.io-stream');
 
 function init(io){
-	var storyID = "";
 
 	router.get('/', function(req, res) {
-		storyID = "";
 		db.story.find().sort({'_id':-1}).toArray(function(err, articles){
 			console.log("articles: " + JSON.stringify(articles[0]));
 			res.render('pages/stories', {
-				articles: articles
+				articles: articles,
 			});
 		});
 	});
@@ -47,121 +45,108 @@ function init(io){
 	});
 
 	router.get('/:id', function(req, res) {
-		storyID = req.params.id;
 		var id = req.params.id;
+		req.session.story_id = id;
+
+		var success = req.session.success;
+		var error = req.session.error;
+		delete req.session.success;
+		delete req.session.error;
 		db.contents.find({'article_id': id}).toArray(function(err, contents){
 			db.comments.find({'article_id': id}).sort({'_id':1}).toArray(function(err, comments) {
-				res.render('pages/story', { storyId: id, contents: contents, comments: comments});
+				res.render('pages/story', {
+					storyId: id,
+					contents: contents,
+					comments: comments,
+					auth: req.session.valid ? req.session.valid[id] : false,
+					success: success,
+					error: error
+				});
 			});
 		});
 	});
 
-	router.post('/:id', function(req, res){
-		console.log(req.files);
-		fs.readFile(req.files.image.path, function (err, data) {
-			console.log(req.body.text);
-			var imageTitle = req.files.image.originalname;
-
-			if(!imageTitle){
-				console.log("There was an error")
-				res.redirect("/story/" + req.params.id);
-				res.end();
-			} else {
-				var sha1 = crypto.createHash('sha1');
-				sha1.update(String((new Date()).getTime()));
-				sha1.update(imageTitle);
-				imageName = sha1.digest('hex')  + "." + req.files.image.extension;
-				var imgPath = "./public/uploads/fullsize/" + req.params.id + "/" + imageName;
-				var thumbPath = "./public/uploads/thumbs/" + req.params.id + "/" + imageName;
-
-				lwip.open(data, req.files.image.extension, function(err, image){
-					console.log(err);
-
-					image.batch()
-					.resize(200)
-					.writeFile(thumbPath, function(err){
-						console.log(err);
-
-						fs.writeFile(imgPath, data, function (err) {
-							console.log(err);
-
-							var content = {
-								title : imageTitle,
-								image : imageName,
-								text : req.body.text,
-								article_id : req.params.id
-							};
-
-							// add to db
-							db.contents.insert(content, function(err, result){
-								console.log(result);
-								if(err) throw err;
-								//io.sockets.emit('getImage' + req.params.id, content);
-								res.redirect("/story/" + req.params.id);
-							});
-						});
-					});
-				});
+	router.post('/:id/login', function(req, res){
+		var id = req.params.id;
+		db.story.findById(id, function(err, story){
+			var sha1 = crypto.createHash('sha1');
+			sha1.update(req.body.password);
+			if(!req.session.valid) req.session.valid = {};
+			if(story.password == sha1.digest('hex')){
+				req.session.valid[id] = true;
+				req.session.success = "login success";
 			}
+			else{
+				req.session.valid[id] = false;
+				req.session.error = "login failed";
+			}
+			req.session.save();
+			res.redirect('/story/' + id);
 		});
 	});
 
 	io.of('/story').on('connection', function(socket){
-		storyID == "" ? console.log('A user read stories') : console.log('A user read story: ' + storyID);
-		socket.join('story' + storyID);
+		console.log(socket.request.session);
+		var session = socket.request.session;
+		!session.story_id ? console.log('A user read stories') : console.log('A user read story: ' + session.story_id);
+		socket.join('story' + session.story_id);
 
 		socket.on('story comment', function(comment){
-			comment.article_id = storyID;
+			comment.auth = session.valid ? session.valid[session.story_id] : false;
+			comment.article_id = session.story_id;
 			comment.plus = 0;
 
 			db.comments.insert(comment, function(err, result){
 				console.log(result);
 				result[0].time = result[0]._id.getTimestamp();
 				socket.emit('story comment', result[0]);
-				socket.to('story' + storyID).emit('story comment', result[0]);
+				socket.to('story' + session.story_id).emit('story comment', result[0]);
 			});
 		});
 
 		ss(socket).on('story image', function(stream, img_data){
-			var title = img_data.title.split('.')[0];
-			var ext = img_data.title.split('.')[1];
-			var text = img_data.text;
+			if(session.valid && session.valid[session.story_id]){ // avoid upload without login
+				var title = img_data.title.split('.')[0];
+				var ext = img_data.title.split('.')[1];
+				var text = img_data.text;
 
-			var sha1 = crypto.createHash('sha1');
-			sha1.update(String((new Date()).getTime()));
-			sha1.update(title);
-			imageName = sha1.digest('hex')  + "." + ext;
-			var imgPath = "./public/uploads/fullsize/" + storyID + "/" + imageName;
-			var thumbPath = "./public/uploads/thumbs/" + storyID + "/" + imageName;
+				var sha1 = crypto.createHash('sha1');
+				sha1.update(String((new Date()).getTime()));
+				sha1.update(title);
+				imageName = sha1.digest('hex')  + "." + ext;
+				var imgPath = "./public/uploads/fullsize/" + session.story_id + "/" + imageName;
+				var thumbPath = "./public/uploads/thumbs/" + session.story_id + "/" + imageName;
 
-			stream.pipe(fs.createWriteStream(imgPath), {end: false});
-			stream.on('end', function(){
-				lwip.open(imgPath, function(err, image){
-					console.log(err);
-					image.batch().resize(200).writeFile(thumbPath, function(err){
+				stream.pipe(fs.createWriteStream(imgPath), {end: false});
+				stream.on('end', function(){
+					lwip.open(imgPath, function(err, image){
 						console.log(err);
-						var content = {
-							title : title,
-							image : imageName,
-							text : text,
-							article_id : storyID
-						};
-						// add to db
-						db.contents.insert(content, function(err, result){
-							console.log(result);
-							if(err) throw err;
-							socket.emit('story image', result[0]);
-							socket.to('story' + storyID).emit('story image', result[0]);
+						image.batch().resize(200).writeFile(thumbPath, function(err){
+							console.log(err);
+							var content = {
+								title : title,
+								image : imageName,
+								text : text,
+								article_id : session.story_id
+							};
+							// add to db
+							db.contents.insert(content, function(err, result){
+								console.log(result);
+								if(err) throw err;
+								socket.emit('story image', result[0]);
+								socket.emit('success msg', "success upload" + title);
+								socket.to('story' + session.story_id).emit('story image', result[0]);
+							});
 						});
 					});
 				});
-			});
-
+			}
+			else socket.emit('error msg', "not login");
 		});
 
 		socket.on('disconnect', function(){
-			socket.leave('story' + storyID);
-			storyID == "" ? console.log('A user left stories') : console.log('A user left story: ' + storyID);
+			socket.leave('story' + session.story_id);
+			!session.story_id ? console.log('A user left stories') : console.log('A user left story: ' + session.story_id);
 		});
 	});
 
