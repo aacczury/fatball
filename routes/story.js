@@ -138,10 +138,8 @@ function init(io){
 			stream.on('end', function(){
 				lwip.open(imgPath, function(err, image){
 					console.log(err);
-
 					image.batch().resize(200).writeFile(thumbPath, function(err){
 						console.log(err);
-
 						var content = {
 							title : title,
 							image : imageName,
@@ -152,7 +150,8 @@ function init(io){
 						db.contents.insert(content, function(err, result){
 							console.log(result);
 							if(err) throw err;
-							//io.sockets.emit('getImage' + req.params.id, content);
+							socket.emit('story image', result[0]);
+							socket.to('story' + storyID).emit('story image', result[0]);
 						});
 					});
 				});

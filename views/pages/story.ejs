@@ -59,7 +59,7 @@
             <div class="col-sm-4">
                 <div class="well">
     				<h2>Contents</h2>
-    				<ul>
+    				<ul id="images_content">
     					<% for(var i = 0; i < contents.length; ++ i ){ %>
     						<a href="/story/<%= storyId %>#<%= i %>">
     							<li>
@@ -84,22 +84,6 @@
         var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
         var socket = io('http://140.116.247.90:4104/story');
 
-        $('#comment_form').submit(function(){
-            $('#comment_author').css('box-shadow', '');
-            $('#comment_text').css('box-shadow', '');
-            if($('#comment_author').val() == "") $('#comment_author').focus().css('box-shadow', '0px 0px 3px red');
-            else if($('#comment_text').val() == "") $('#comment_text').focus().css('box-shadow', '0px 0px 3px red');
-            else{
-                var comment = {
-                    author: $('#comment_author').val(),
-                    text: $('#comment_text').val()
-                }
-                socket.emit('story comment', comment);
-                $('#comment_text').val("");
-            }
-            return false;
-        });
-
         var file = null;
         $('#image_file').change(function(e){
             file = e.target.files[0];
@@ -121,10 +105,34 @@
             return false;
         });
 
+        $('#comment_form').submit(function(){
+            $('#comment_author').css('box-shadow', '');
+            $('#comment_text').css('box-shadow', '');
+            if($('#comment_author').val() == "") $('#comment_author').focus().css('box-shadow', '0px 0px 3px red');
+            else if($('#comment_text').val() == "") $('#comment_text').focus().css('box-shadow', '0px 0px 3px red');
+            else{
+                var comment = {
+                    author: $('#comment_author').val(),
+                    text: $('#comment_text').val()
+                }
+                socket.emit('story comment', comment);
+                $('#comment_text').val("");
+            }
+            return false;
+        });
 
+
+
+        socket.on('story image', function(img){
+            //console.log(img);
+            var image = $("<img />").attr("title", img.title).attr("src", "/uploads/thumbs/" + img.article_id + "/" + img.image);
+            var text = $("<small></small>").addClass("muted").text(img.text);
+            var li = $("<li></li>").append(image).append(text);
+            $("#images_content").append(li);
+        });
 
         socket.on('story comment', function(comment){
-            console.log(comment);
+            //console.log(comment);
             var author = $("<div></div>").addClass("col-md-2").text(comment.author);
             var text = $("<div></div>").addClass("col-md-4").text(comment.text);
             var d = new Date(comment.time);
