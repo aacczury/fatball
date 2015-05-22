@@ -47,6 +47,12 @@
 					<h2>Comments</h2>
 					<ul id="comments_content">
 						<% for(var i = 0; i < comments.length; ++ i ){ %>
+                            <% if(comments[i].auth){ %>
+                                <div class="bs-callout bs-callout-danger">
+                                    <h4><%= comments[i].author %></h4>
+                                    <p><%= comments[i].text %></p>
+                                </div>
+                            <% }else{ %>
 							<div class="row">
 								<div class="col-md-2">
 									<%= comments[i].author %>
@@ -60,6 +66,7 @@
 									<%= monthNames[d.getMonth()] + " " + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString() %>
 								</div>
 							</div>
+                            <% } %>
 						<% } %>
 					</ul>
                 </div>
@@ -142,13 +149,20 @@
         });
 
         socket.on('story comment', function(comment){
-            //console.log(comment);
-            var author = $("<div></div>").addClass("col-md-2").text(comment.author);
-            var text = $("<div></div>").addClass("col-md-4").text(comment.text);
-            var d = new Date(comment.time);
-            var time = $("<div></div>").addClass("col-md-3").addClass("col-md-offset-3").text(monthNames[d.getMonth()] + " " + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString('zh-TW', { hour12: false }));
-            var row = $("<div></div>").addClass("row").append(author).append(text).append(time);
-            $("#comments_content").append(row);
+            if(comment.auth){
+                var h4 = $("<h4></h4>").text(comment.author);
+                var p = $("<p></p>").text(comment.text);
+                var callout = $("<div></div>").addClass("bs-callout").addClass("bs-callout-danger").append(h4).append(p);
+                $("#comments_content").append(callout);
+            }
+            else{
+                var author = $("<div></div>").addClass("col-md-2").text(comment.author);
+                var text = $("<div></div>").addClass("col-md-4").text(comment.text);
+                var d = new Date(comment.time);
+                var time = $("<div></div>").addClass("col-md-3").addClass("col-md-offset-3").text(monthNames[d.getMonth()] + " " + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString('zh-TW', { hour12: false }));
+                var row = $("<div></div>").addClass("row").append(author).append(text).append(time);
+                $("#comments_content").append(row);
+            }
         });
     </script>
 

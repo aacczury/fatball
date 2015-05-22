@@ -15,10 +15,10 @@ var ss = require('socket.io-stream');
 function init(io){
 
 	router.get('/', function(req, res) {
-		db.story.find().sort({'_id':-1}).toArray(function(err, articles){
-			console.log("articles: " + JSON.stringify(articles[0]));
+		db.story.find().sort({'_id':-1}).toArray(function(err, stories){
+			console.log("stories: " + JSON.stringify(stories[0]));
 			res.render('pages/stories', {
-				articles: articles,
+				stories: stories,
 			});
 		});
 	});
@@ -86,7 +86,6 @@ function init(io){
 	});
 
 	io.of('/story').on('connection', function(socket){
-		console.log(socket.request.session);
 		var session = socket.request.session;
 		!session.story_id ? console.log('A user read stories') : console.log('A user read story: ' + session.story_id);
 		socket.join('story' + session.story_id);
@@ -95,6 +94,7 @@ function init(io){
 			comment.auth = session.valid ? session.valid[session.story_id] : false;
 			comment.article_id = session.story_id;
 			comment.plus = 0;
+			comment.hit = false;
 
 			db.comments.insert(comment, function(err, result){
 				console.log(result);
