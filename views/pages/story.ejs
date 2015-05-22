@@ -13,8 +13,9 @@
 
     <main>
         <div class="row">
+
             <div class="col-sm-8">
-            
+
                 <div class="jumbotron">
 					<h2>安價</h2>
 					<form method='post' action='/story/<%= storyId %>' enctype='multipart/form-data'>
@@ -23,19 +24,19 @@
 						<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
 					</form>
                 </div>
-				
+
                 <div class="jumbotron">
 					<h2>安價</h2>
-					<form method='post' action='/comment/<%= storyId %>/'>
-						<input id="author" type="text" placeholder="Nickname" name="author" required>
-						<input id="text" type="text" placeholder="Content" name="text" required>
-						<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
+					<form id="comments_form">
+						<input id="author" type="text" placeholder="Nickname" name="author" />
+						<input id="text" type="text" placeholder="Content" name="text" />
+						<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
 					</form>
                 </div>
-				
+
                 <div class="well">
 					<h2>Comments</h2>
-					<ul>
+					<ul id="comments_content">
 						<% for(var i = 0; i < comments.length; ++ i ){ %>
 							<div class="row">
 								<div class="col-md-2">
@@ -47,38 +48,67 @@
 								<div class="col-md-3 col-md-offset-3">
 									<% var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ]; %>
 									<% var d = new Date(comments[i]._id.getTimestamp()) %>
-									<%= monthNames[d.getMonth()] + " " + d.getDate() + " " + d.toLocaleTimeString() %>
+									<%= monthNames[d.getMonth()] + " " + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString() %>
 								</div>
 							</div>
 						<% } %>
 					</ul>
                 </div>
-                
             </div>
-            <div class="col-sm-4">
-                
-                <div class="well">
-					<h2>Contents</h2>
-					<ul>
-						<% for(var i = 0; i < contents.length; ++ i ){ %>
-							<a href="/story/<%= storyId %>#<%= i %>">
-								<li>
-									<img title="<%= contents[i].title %>" src="/uploads/thumbs/<%= storyId %>/<%= contents[i].image %>" />
-									<small class="muted">
-										<%= contents[i].text %>
-									</small>
-								</li>
-							</a>
-						<% } %>
-					</ul>
-                </div>
 
+            <div class="col-sm-4">
+                <div class="well">
+    				<h2>Contents</h2>
+    				<ul>
+    					<% for(var i = 0; i < contents.length; ++ i ){ %>
+    						<a href="/story/<%= storyId %>#<%= i %>">
+    							<li>
+    								<img title="<%= contents[i].title %>" src="/uploads/thumbs/<%= storyId %>/<%= contents[i].image %>" />
+    								<small class="muted">
+    									<%= contents[i].text %>
+    								</small>
+    							</li>
+    						</a>
+    					<% } %>
+    				</ul>
+                </div>
             </div>
+
         </div>
     </main>
 
-	<div id="content"></div>
-	<script src="js/main.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
+        var socket = io('http://140.116.247.90:4104/story');
+
+        $('#comments_form').submit(function(){
+            $('#author').css('box-shadow', '');
+            $('#text').css('box-shadow', '');
+            if($('#author').val() == "") $('#author').focus().css('box-shadow', '0px 0px 3px red');
+            else if($('#text').val() == "") $('#text').focus().css('box-shadow', '0px 0px 3px red');
+            else{
+                var comment = {
+                    author: $('#author').val(),
+                    text: $('#text').val()
+                }
+                socket.emit('story comment', comment);
+                $('#text').val("");
+            }
+            return false;
+        });
+
+        socket.on('story comment', function(comment){
+            console.log(comment);
+            var author = $("<div></div>").addClass("col-md-2").text(comment.author);
+            var text = $("<div></div>").addClass("col-md-4").text(comment.text);
+            var d = new Date(comment.time);
+            var time = $("<div></div>").addClass("col-md-3").addClass("col-md-offset-3").text(monthNames[d.getMonth()] + " " + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString('zh-TW', { hour12: false }));
+            var row = $("<div></div>").addClass("row").append(author).append(text).append(time);
+            $("#comments_content").append(row);
+        });
+    </script>
 
     <footer>
         <% include ../partials/footer %>
