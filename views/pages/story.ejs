@@ -12,91 +12,137 @@
     </header>
 
     <main>
-        <div class="row">
-
-            <div class="col-sm-8">
-
-                <div class="jumbotron">
-					<h2>安價</h2>
-                    <% if(auth){ %>
-    					<form id="image_form">
-    						<input id="image_file" type='file' name='image'/><br/>
-    						<textarea id="image_text" name="text" style="width:95%;" rows="3"></textarea><br/>
-    						<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
-    					</form>
-                    <% }else{ %>
-                        <form method='post' action='/story/<%= storyId %>/login/' >
-                            <input id="password" name="password" type="text" placeholder="Password" />
-    						<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
-                        </form>
-                    <% } %>
-                    <% if(error){ %><div class="alert alert-danger" role="alert"><%= error %></div><% } %>
-                    <% if(success){ %><div class="alert alert-success" role="alert"><%= success %></div><% } %>
-                </div>
-
-                <div class="jumbotron">
-					<h2>安價</h2>
-					<form id="comment_form">
-						<input id="comment_author" type="text" placeholder="Nickname" name="author" />
-						<input id="comment_text" type="text" placeholder="Content" name="text" />
-						<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
-					</form>
-                </div>
-
-                <div class="well">
-					<h2>Comments</h2>
-					<ul id="comments_content">
-						<% for(var i = 0; i < comments.length; ++ i ){ %>
-                            <% if(comments[i].auth){ %>
-                                <div class="bs-callout bs-callout-danger">
-                                    <h4><%= comments[i].author %></h4>
-                                    <p><%= comments[i].text %></p>
-                                </div>
-                            <% }else{ %>
-							<div class="row">
-								<div class="col-md-2">
-									<%= comments[i].author %>
-								</div>
-								<div class="col-md-4">
-									<%= comments[i].text %>
-								</div>
-								<div class="col-md-3 col-md-offset-3">
-									<% var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ]; %>
-									<% var d = new Date(comments[i]._id.getTimestamp()) %>
-									<%= monthNames[d.getMonth()] + " " + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString() %>
-								</div>
-							</div>
-                            <% } %>
-						<% } %>
-					</ul>
-                </div>
+        <div id="image_gallery" class="glass">
+            <div id="images_content" class="content_scroll">
+                <% for(var i = 0; i < contents.length; ++ i ){ %>
+                    <div class="img_contain">
+                        <img <% if(i == 0){ %>class="select_img"<% } %> title="<%= contents[i].title %>" src="/uploads/thumbs/<%= storyId %>/<%= contents[i].image %>" />
+                    </div>
+                <% } %>
             </div>
-
-            <div class="col-sm-4">
-                <div class="well">
-    				<h2>Contents</h2>
-    				<ul id="images_content">
-    					<% for(var i = 0; i < contents.length; ++ i ){ %>
-    						<a href="/story/<%= storyId %>#<%= i %>">
-    							<li>
-    								<img title="<%= contents[i].title %>" src="/uploads/thumbs/<%= storyId %>/<%= contents[i].image %>" />
-    								<small class="muted">
-    									<%= contents[i].text %>
-    								</small>
-    							</li>
-    						</a>
-    					<% } %>
-    				</ul>
-                </div>
-            </div>
-
         </div>
+
+        <div id="content" class="glass">
+			<h2>安價</h2>
+            <img title="<%= contents[0].title %>" src="/uploads/fullsize/<%= storyId %>/<%= contents[0].image %>" />
+            <% if(error){ %><div class="pure-alert pure-alert-error"><label><%= error %></label>: Wrong password</div><% } %>
+            <% if(success){ %><div class="pure-alert pure-alert-success"><label><%= success %></label>: Login, you can go on with story.</div><% } %>
+            <% if(auth){ %>
+				<form id="image_form">
+					<input id="image_file" type='file' name='image'/><br/>
+					<textarea id="image_text" name="text" style="width:95%;" rows="3"></textarea><br/>
+					<button class="btn btn-primary" data-loading-text="Sending...">Send</button>
+				</form>
+            <% }else{ %>
+                <form method='post' action='/story/<%= storyId %>/login/' >
+                    <input id="password" name="password" type="text" placeholder="Password" />
+					<button type="submit" class="btn btn-primary" data-loading-text="Sending...">Send</button>
+                </form>
+            <% } %>
+        </div>
+
+
+        <div id="comments" class="glass">
+			<div id="comments_content" class="content_scroll">
+				<% for(var i = 0; i < comments.length; ++ i ){ %>
+                    <% if(comments[i].auth){ %>
+                        <div class="authorComment bs-callout bs-callout-danger">
+                            <h4><%= comments[i].author %></h4>
+                            <p><%= comments[i].text %></p>
+                        </div>
+                    <% }else{ %>
+					<div class="comment">
+                        <% if(comments[i].plus > 0){ %>
+                            <div>
+                                <% if(comments[i].plus_auth){ %>
+                                    <div class="comment_plus badge badge-inverse" comment_id="<%= comments[i]._id %>">-1</div>
+                                <% }else{ %>
+                                    <div class="comment_plus badge badge-warning" comment_id="<%= comments[i]._id %>">+1</div>
+                                <% } %>
+                                <div class="comment_score badge
+                                    <% if(comments[i].plus > 99){ %>
+                                        badge-error
+                                    <% }else if(comments[i].plus > 49 ){  %>
+                                        badge-success
+                                    <% }else if(comments[i].plus > 9){ %>
+                                        badge-info
+                                    <% } %>" comment_id="<%= comments[i]._id %>">
+                                    <%= comments[i].plus %>
+                                </div>
+                            </div>
+                        <% }else{ %>
+                            <div>
+                                <div class="comment_plus badge badge-warning" comment_id = "<%= comments[i]._id %>">
+                                    +1
+                                </div>
+                            </div>
+                        <% } %>
+						<div>
+							<%= comments[i].author %>
+						</div>
+						<div>
+							<%= comments[i].text %>
+						</div>
+						<div>
+							<% var d = new Date(comments[i]._id.getTimestamp()) %>
+							<%= (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + "/" + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString() %>
+						</div>
+					</div>
+                    <% } %>
+				<% } %>
+			</div>
+            <form id="comment_form">
+                <input id="comment_author" type="text" placeholder="Nickname" name="author" />
+                <input id="comment_text" type="text" placeholder="Content" name="text" />
+                <button class="btn btn-primary" data-loading-text="Sending...">Send</button>
+            </form>
+        </div>
+
     </main>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="/javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/javascripts/socket.io-stream.js"></script>
     <script>
+        $(function(){
+            $.mCustomScrollbar.defaults.axis="y";
+
+            var commentHeight = $("#comments_content").find(".comment").outerHeight();
+            $("#comments_content").mCustomScrollbar({
+                theme:"minimal-dark",
+                scrollInertia: 0,
+                mouseWheel:{ scrollAmount: commentHeight },
+                keyboard:{ scrollAmount: commentHeight },
+                callbacks:{
+                    whileScrolling: function(){
+                        $("#comments_content")
+                            .find('.mCSB_container')
+                            .css('top', Math.round($("#comments_content").find('.mCSB_container').css('top').replace(/[^-\d\.]/g, '') / commentHeight) * commentHeight);
+                    }
+                }
+            });
+
+            var imageHeight = $("#images_content").find(".img_contain").outerHeight();
+            $("#images_content").mCustomScrollbar({
+                theme:"minimal-dark",
+                scrollInertia: 0,
+                mouseWheel:{ scrollAmount: imageHeight },
+                keyboard:{ scrollAmount: imageHeight },
+                callbacks:{
+                    whileScrolling: function(){
+                        var num_content_images = Math.ceil($("#images_content").find('.mCustomScrollBox').height() / imageHeight);
+                        var num_all_images = $("#images_content").find('.img_contain').length;
+                        var num_offset_images = Math.ceil($("#images_content").find('.mCSB_container').css('top').replace(/[^-\d\.]/g, '') / imageHeight);
+                        if(num_all_images + num_offset_images > num_content_images)
+                            $("#images_content")
+                                .find('.mCSB_container')
+                                .css('top', Math.round($("#images_content").find('.mCSB_container').css('top').replace(/[^-\d\.]/g, '') / imageHeight) * imageHeight);
+                    }
+                }
+            });
+        });
+
         var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
         var socket = io('http://140.116.247.90:4104/story');
 
@@ -125,10 +171,8 @@
         socket.on('story image', function(img){
             //console.log(img);
             var image = $("<img />").attr("title", img.title).attr("src", "/uploads/thumbs/" + img.article_id + "/" + img.image);
-            var text = $("<small></small>").addClass("muted").text(img.text);
-            var li = $("<li></li>").append(image).append(text);
-            var a = $("<a></a>").attr("href", "/story/" + img.article_id + "#" + ( image_length ++ )).append(li);
-            $("#images_content").append(a);
+            var div = $("<div></div>").addClass("img_contain").append(image);
+            $("#images_content .mCSB_container").append(div);
         });
         <% } %>
 
@@ -147,21 +191,70 @@
             }
             return false;
         });
-
         socket.on('story comment', function(comment){
             if(comment.auth){
                 var h4 = $("<h4></h4>").text(comment.author);
                 var p = $("<p></p>").text(comment.text);
                 var callout = $("<div></div>").addClass("bs-callout").addClass("bs-callout-danger").append(h4).append(p);
-                $("#comments_content").append(callout);
+                $("#comments_content .mCSB_container").append(callout);
             }
             else{
-                var author = $("<div></div>").addClass("col-md-2").text(comment.author);
-                var text = $("<div></div>").addClass("col-md-4").text(comment.text);
+                var plus = $("<div></div>").addClass("comment_plus").addClass("badge").addClass("badge-warning").attr('comment_id', comment._id).text("+1").click(function(){
+                    socket.emit('comment plus', $(this).attr('comment_id'));
+                    $(this).hide();
+                });
+                var div = $("<div></div>").append(plus).bind('mouseenter', function(){
+                    $(this).children().eq(0).show();
+                }).bind('mouseleave', function(){
+                    $(this).children().eq(0).hide();
+                });
+                var author = $("<div></div>").text(comment.author);
+                var text = $("<div></div>").text(comment.text);
                 var d = new Date(comment.time);
-                var time = $("<div></div>").addClass("col-md-3").addClass("col-md-offset-3").text(monthNames[d.getMonth()] + " " + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString('zh-TW', { hour12: false }));
-                var row = $("<div></div>").addClass("row").append(author).append(text).append(time);
-                $("#comments_content").append(row);
+                var time = $("<div></div>").text((d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + "/" + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString('zh-TW', { hour12: false }));
+                var row = $("<div></div>").addClass("comment").append(div).append(author).append(text).append(time);
+                $("#comments_content .mCSB_container").append(row);
+            }
+        });
+
+
+        $('.comment_plus').parent().bind('mouseenter', function(){
+            $(this).children().eq(0).show();
+        });
+        $('.comment_plus').parent().bind('mouseleave', function(){
+            $(this).children().eq(0).hide();
+        });
+        $('.comment_plus').click(function(){
+            socket.emit('comment plus', $(this).attr('comment_id'));
+            $(this).hide();
+        });
+        socket.on('comment score', function(comment, plus_auth){
+            var comment_score, newScore = true;
+            if($(".comment_score[comment_id=" + comment._id + "]").length > 0){
+                comment_score = $(".comment_score[comment_id=" + comment._id + "]");
+                newScore = false;
+            }
+            else
+                comment_score = $("<div></div>").attr("comment_id", comment._id);
+
+            comment_score.attr('class', 'comment_score badge').text(comment.plus);
+            if(comment.plus > 99)
+                comment_score.addClass('badge-error');
+            else if(comment.plus > 49)
+                comment_score.addClass('badge-success');
+            else if(comment.plus > 9)
+                comment_score.addClass('badge-info');
+            else if(comment.plus <= 0)
+                comment_score.remove();
+
+            if(newScore)
+                $(".comment_plus[comment_id=" + comment._id + "]").after(comment_score);
+
+            console.log(plus_auth);
+            if(plus_auth != -1){
+                var plus_text = plus_auth == "+1" ? "-1" : "+1";
+                var plus_class = plus_auth ? 'badge-inverse' : 'badge-warning';
+                $(".comment_plus[comment_id=" + comment._id + "]").attr('class', 'comment_plus badge ' + plus_class).text(plus_text);
             }
         });
     </script>

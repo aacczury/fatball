@@ -54,6 +54,13 @@ function init(io){
 		delete req.session.error;
 		db.contents.find({'article_id': id}).toArray(function(err, contents){
 			db.comments.find({'article_id': id}).sort({'_id':1}).toArray(function(err, comments) {
+				comments.filter(function(x){
+						return req.session.plus && req.session.plus[x._id];
+					})
+					.map(function(x){
+						x.plus_auth = true;
+						return x;
+					});
 				res.render('pages/story', {
 					storyId: id,
 					contents: contents,
@@ -74,11 +81,11 @@ function init(io){
 			if(!req.session.valid) req.session.valid = {};
 			if(story.password == sha1.digest('hex')){
 				req.session.valid[id] = true;
-				req.session.success = "login success";
+				req.session.success = "Success";
 			}
 			else{
 				req.session.valid[id] = false;
-				req.session.error = "login failed";
+				req.session.error = "Error";
 			}
 			req.session.save();
 			res.redirect('/story/' + id);
@@ -87,22 +94,8 @@ function init(io){
 
 	io.of('/story').on('connection', function(socket){
 		var session = socket.request.session;
-		!session.story_id ? console.log('A user read stories') : console.log('A user read story: ' + session.story_id);
+		!session.story_id ? console.log(socket.id + ' read stories') : console.log(socket.id + ' read story: ' + session.story_id);
 		socket.join('story' + session.story_id);
-
-		socket.on('story comment', function(comment){
-			comment.auth = session.valid ? session.valid[session.story_id] : false;
-			comment.article_id = session.story_id;
-			comment.plus = 0;
-			comment.hit = false;
-
-			db.comments.insert(comment, function(err, result){
-				console.log(result);
-				result[0].time = result[0]._id.getTimestamp();
-				socket.emit('story comment', result[0]);
-				socket.to('story' + session.story_id).emit('story comment', result[0]);
-			});
-		});
 
 		ss(socket).on('story image', function(stream, img_data){
 			if(session.valid && session.valid[session.story_id]){ // avoid upload without login
@@ -142,6 +135,34 @@ function init(io){
 				});
 			}
 			else socket.emit('error msg', "not login");
+		});
+
+		socket.on('story comment', function(comment){
+			comment.auth = session.valid ? session.valid[session.story_id] : false;
+			comment.article_id = session.story_id;
+			comment.plus = 0;
+			comment.hit = false;
+
+			db.comments.insert(comment, function(err, result){
+				console.log(result);
+				result[0].time = result[0]._id.getTimestamp();
+				socket.emit('story comment', result[0]);
+				socket.to('story' + session.story_id).emit('story comment', result[0]);
+			});
+		});
+
+		socket.on('comment plus', function(comment_id){
+			if(!session.plus) session.plus = {};
+			var plus = session.plus[comment_id] ? -1 : 1;
+			session.plus[comment_id] = session.plus[comment_id] ? false : true;
+			session.save();
+
+			db.comments.updateById(comment_id, {$inc:{plus: plus}}, function(err, result){
+				db.comments.findById(comment_id, function(err, result){
+					socket.emit('comment score', result, session.plus[comment_id]);
+					socket.to('story' + session.story_id).emit('comment score', result, -1);
+				});
+			});
 		});
 
 		socket.on('disconnect', function(){
