@@ -113,14 +113,7 @@
                 theme:"minimal-dark",
                 scrollInertia: 0,
                 mouseWheel:{ scrollAmount: commentHeight },
-                keyboard:{ scrollAmount: commentHeight },
-                callbacks:{
-                    whileScrolling: function(){
-                        $("#comments_content")
-                            .find('.mCSB_container')
-                            .css('top', Math.round($("#comments_content").find('.mCSB_container').css('top').replace(/[^-\d\.]/g, '') / commentHeight) * commentHeight);
-                    }
-                }
+                keyboard:{ scrollAmount: commentHeight }
             });
 
             var imageHeight = $("#images_content").find(".img_contain").outerHeight();
@@ -128,18 +121,7 @@
                 theme:"minimal-dark",
                 scrollInertia: 0,
                 mouseWheel:{ scrollAmount: imageHeight },
-                keyboard:{ scrollAmount: imageHeight },
-                callbacks:{
-                    whileScrolling: function(){
-                        var num_content_images = Math.ceil($("#images_content").find('.mCustomScrollBox').height() / imageHeight);
-                        var num_all_images = $("#images_content").find('.img_contain').length;
-                        var num_offset_images = Math.ceil($("#images_content").find('.mCSB_container').css('top').replace(/[^-\d\.]/g, '') / imageHeight);
-                        if(num_all_images + num_offset_images > num_content_images)
-                            $("#images_content")
-                                .find('.mCSB_container')
-                                .css('top', Math.round($("#images_content").find('.mCSB_container').css('top').replace(/[^-\d\.]/g, '') / imageHeight) * imageHeight);
-                    }
-                }
+                keyboard:{ scrollAmount: imageHeight }
             });
         });
 
