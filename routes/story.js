@@ -11,6 +11,7 @@ var crypto = require('crypto');
 var fs = require('fs');
 var lwip = require('lwip');
 var ss = require('socket.io-stream');
+var markdown =require('markdown').markdown;
 
 function init(io){
 
@@ -54,6 +55,9 @@ function init(io){
 		delete req.session.error;
 		db.contents.find({'article_id': id}).toArray(function(err, contents){
 			db.comments.find({'article_id': id}).sort({'_id':1}).toArray(function(err, comments) {
+				contents.map(function(x){
+					x.text = markdown.toHTML(x.text);
+				});
 				comments.filter(function(x){
 						return req.session.plus && req.session.plus[x._id];
 					})
@@ -113,8 +117,11 @@ function init(io){
 				stream.pipe(fs.createWriteStream(imgPath), {end: false});
 				stream.on('end', function(){
 					lwip.open(imgPath, function(err, image){
-						console.log(err);
-						image.batch().resize(200).writeFile(thumbPath, function(err){
+						var ratio;
+						if(image.width() >= image.height()) ratio = 200/image.width();
+						else ratio = 200/image.height();
+
+						image.batch().resize(image.width() * ratio, image.height() * ratio).writeFile(thumbPath, function(err){
 							console.log(err);
 							var content = {
 								title : title,
@@ -125,6 +132,7 @@ function init(io){
 							// add to db
 							db.contents.insert(content, function(err, result){
 								console.log(result);
+								result.text = markdown.toHTML(result.text);
 								if(err) throw err;
 								socket.emit('story image', result[0]);
 								socket.emit('success msg', "success upload" + title);
@@ -144,7 +152,6 @@ function init(io){
 			comment.hit = false;
 
 			db.comments.insert(comment, function(err, result){
-				console.log(result);
 				result[0].time = result[0]._id.getTimestamp();
 				socket.emit('story comment', result[0]);
 				socket.to('story' + session.story_id).emit('story comment', result[0]);

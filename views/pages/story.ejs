@@ -16,7 +16,7 @@
             <div id="images_content" class="content_scroll">
                 <% for(var i = 0; i < contents.length; ++ i ){ %>
                     <div class="img_contain">
-                        <img <% if(i == 0){ %>class="select_img"<% } %> title="<%= contents[i].title %>" src="/uploads/thumbs/<%= storyId %>/<%= contents[i].image %>" />
+                        <img <% if(i == 0){ %>class="select_img"<% } %> img_name="<%= contents[i].image %>" img_text="<%= contents[i].text %>" title="<%= contents[i].title %>" src="/uploads/thumbs/<%= storyId %>/<%= contents[i].image %>" />
                     </div>
                 <% } %>
             </div>
@@ -24,7 +24,10 @@
 
         <div id="content" class="glass">
 			<h2>安價</h2>
-            <img title="<%= contents[0].title %>" src="/uploads/fullsize/<%= storyId %>/<%= contents[0].image %>" />
+            <div class="image_main">
+                <img title="<%= contents[0].title %>" src="/uploads/fullsize/<%= storyId %>/<%= contents[0].image %>" />
+                <div><%- contents[0].text %></div>
+            </div>
             <% if(error){ %><div class="pure-alert pure-alert-error"><label><%= error %></label>: Wrong password</div><% } %>
             <% if(success){ %><div class="pure-alert pure-alert-success"><label><%= success %></label>: Login, you can go on with story.</div><% } %>
             <% if(auth){ %>
@@ -77,15 +80,12 @@
                                 </div>
                             </div>
                         <% } %>
-						<div>
-							<%= comments[i].author %>
-						</div>
-						<div>
-							<%= comments[i].text %>
-						</div>
+						<div><%= comments[i].author %></div>
+						<div><%= comments[i].text %></div>
 						<div>
 							<% var d = new Date(comments[i]._id.getTimestamp()) %>
-							<%= (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + "/" + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString() %>
+							<%= /*(d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + "/" + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " +*/ %>
+                            <%= d.toLocaleTimeString() %>
 						</div>
 					</div>
                     <% } %>
@@ -108,14 +108,6 @@
         $(function(){
             $.mCustomScrollbar.defaults.axis="y";
 
-            var commentHeight = $("#comments_content").find(".comment").outerHeight();
-            $("#comments_content").mCustomScrollbar({
-                theme:"minimal-dark",
-                scrollInertia: 0,
-                mouseWheel:{ scrollAmount: commentHeight },
-                keyboard:{ scrollAmount: commentHeight }
-            });
-
             var imageHeight = $("#images_content").find(".img_contain").outerHeight();
             $("#images_content").mCustomScrollbar({
                 theme:"minimal-dark",
@@ -123,11 +115,27 @@
                 mouseWheel:{ scrollAmount: imageHeight },
                 keyboard:{ scrollAmount: imageHeight }
             });
+
+            var commentHeight = $("#comments_content").find(".comment").outerHeight();
+            $("#comments_content").mCustomScrollbar({
+                theme:"minimal-dark",
+                scrollInertia: 0,
+                mouseWheel:{ scrollAmount: commentHeight },
+                keyboard:{ scrollAmount: commentHeight }
+            });
         });
 
-        var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
-        var socket = io('http://140.116.247.90:4104/story');
+        $(".img_contain").click(function(){
+            var img = $(this).find("img");
+            console.log(img);
+            $(".img_contain .select_img").removeClass("select_img");
+            img.addClass("select_img");
+            $(".image_main img").attr("src", "/uploads/fullsize/<%= storyId %>/" + img.attr("img_name"));
+            $(".image_main div").html(img.attr("img_text"));
+        });
 
+        //var monthNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
+        var socket = io('http://140.116.247.90:4104/story');
         <% if(auth){ %>
         var file = null;
         $('#image_file').change(function(e){
@@ -149,19 +157,28 @@
             }
             return false;
         });
-        var image_length = <%= contents.length %>;
+        <% } %>
         socket.on('story image', function(img){
             //console.log(img);
-            var image = $("<img />").attr("title", img.title).attr("src", "/uploads/thumbs/" + img.article_id + "/" + img.image);
+            var image = $("<img />").attr("title", img.title).attr("src", "/uploads/thumbs/" + img.article_id + "/" + img.image).attr("img_name", img.image).attr("img_text", img.text);
             var div = $("<div></div>").addClass("img_contain").append(image);
+            div.click(function(){
+                var img = $(this).find("img");
+                console.log(img);
+                $(".img_contain .select_img").removeClass("select_img");
+                img.addClass("select_img");
+                $(".image_main img").attr("src", "/uploads/fullsize/<%= storyId %>/" + img.attr("img_name"));
+                $(".image_main div").html(img.attr("img_text"));
+            });
             $("#images_content .mCSB_container").append(div);
         });
-        <% } %>
 
         $('#comment_form').submit(function(){
+            var pattern = /^\w+$/g;
+            console.log();
             $('#comment_author').css('box-shadow', '');
             $('#comment_text').css('box-shadow', '');
-            if($('#comment_author').val() == "") $('#comment_author').focus().css('box-shadow', '0px 0px 3px red');
+            if($('#comment_author').val() == "" || !$('#comment_author').val().match(pattern) || $('#comment_author').val().length > 10) $('#comment_author').focus().css('box-shadow', '0px 0px 3px red');
             else if($('#comment_text').val() == "") $('#comment_text').focus().css('box-shadow', '0px 0px 3px red');
             else{
                 var comment = {
@@ -193,7 +210,7 @@
                 var author = $("<div></div>").text(comment.author);
                 var text = $("<div></div>").text(comment.text);
                 var d = new Date(comment.time);
-                var time = $("<div></div>").text((d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + "/" + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " + d.toLocaleTimeString('zh-TW', { hour12: false }));
+                var time = $("<div></div>").text( /*(d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1) + "/" + (d.getDate() < 10 ? '0' : '') + d.getDate() + " " +*/ d.toLocaleTimeString('zh-TW', { hour12: false }));
                 var row = $("<div></div>").addClass("comment").append(div).append(author).append(text).append(time);
                 $("#comments_content .mCSB_container").append(row);
             }

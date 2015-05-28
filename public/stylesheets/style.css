@@ -9,11 +9,15 @@ body{
 	background-position: center bottom;
 	background-attachment: fixed;
 	background-size: cover;
-    font-family:"微軟正黑體", Calibri, Arial;
+    font-family: Consolas, "微軟正黑體", Calibri, Arial;
 }
 
 ul, li{
     list-style-type: none;
+}
+
+textarea {
+    resize: none;
 }
 
 /* callout */
@@ -187,10 +191,47 @@ ul, li{
     display: inline-block;
 }
 
+form *{
+    font-family: Consolas, "微軟正黑體", Calibri, Arial;
+    vertical-align: middle;
+    padding: 6px 12px;
+    font-size: 14px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border: 1px solid #CCC;
+    border-radius: 4px;
+    box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.075) inset;
+    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+}
+
+form *:focus{
+    border-color: #66AFE9;
+    outline: 0px none;
+    box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.075) inset, 0px 0px 8px rgba(102, 175, 233, 0.6);
+}
+form button:hover{
+    background-color: #448DB7;
+    color: white;
+}
+form button:active{
+    background-color: #115A84;
+    color: white;
+}
+
+code{
+    font-family: Consolas, "微軟正黑體", Calibri, Arial;
+    vertical-align: top;
+    line-height: 23px;
+    background-color: #2D3143;
+    color: #9DBED8;
+    padding:2px 5px;
+    font-size: 85%;
+    border-radius: 3px;
+}
+
 main{
     margin: 0 auto;
     width: 1400px;
-    height: 90vh;
+    min-height: 90vh;
 }
 
 .content_scroll{
@@ -202,12 +243,36 @@ main{
 #image_gallery{
     vertical-align: top;
     width: 250px;
+    height: 90vh;
 }
 #image_gallery > #images_content{
     height: 95%;
 }
 #images_content .img_contain{
+    width: 200px;
+    height: 200px;
     padding: 5px;
+    text-align: center;
+    font: 0/0 a;
+    cursor: pointer;
+}
+#images_content .img_contain::before{
+    content: ' ';
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+}
+#images_content .img_contain img{
+    display: inline-block;
+    vertical-align: middle;
+    font: 16px/1 Arial, sans-serif;
+    max-width: 200px;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+}
+#images_content .img_contain:hover img{
+    box-shadow: 0px 0px 10px #77aaff;
 }
 #images_content .select_img{
     box-shadow: 0px 0px 10px #8888ff;
@@ -215,18 +280,39 @@ main{
 
 #content{
     vertical-align: top;
-    width: 500px;
+    width: 550px;
 }
 #content img{
-    width: 500px;
+    display: block;
+    max-width:550px;
+    max-height:70%;
+    width: auto;
+    height: auto;
+}
+#content form *{
+    margin: 3px 0px;
+}
+#content form textarea{
+    height: 100px;
 }
 
 #comments{
+    height: 90vh;
     vertical-align: top;
-    width: 470px;
+    width: 450px;
 }
 #comments > .content_scroll{
-    height: 91%;
+    height: 80%;
+}
+#comments #comment_form #comment_author{
+    width: 90px;
+}
+#comments #comment_form #comment_text{
+    width: 210px;
+}
+#comments #comment_form button{
+    width: 80px;
+    font-weight: 400;
 }
 
 .comment{
@@ -235,6 +321,7 @@ main{
 
 .comment > div{
     display: table-cell;
+    font-size: 16px;
 }
 .comment > div:first-child{
     cursor: pointer;
@@ -251,15 +338,14 @@ main{
     width: 40px;
     display: none;
 }
-/*.comment > div:first-child:hover .comment_plus{
-    display: block;
-}*/
-
 .comment > div:nth-child(2){
-    width:60px;
+    width:70px;
 }
 .comment > div:nth-child(3){
-    width:210px;
+    width:220px;
+}
+.comment > div:nth-child(3)::before{
+    content: ':';
 }
 
 footer{
